@@ -89,8 +89,9 @@ boot_alloc(uint32_t n)
 	// the first virtual address that the linker did *not* assign
 	// to any kernel code or global variables.
 	if (!nextfree) {
-		extern char end[];
-		nextfree = ROUNDUP((char *) end, PGSIZE);
+		 extern char end[];
+		
+        	nextfree = ROUNDUP((char *) end, PGSIZE);  
 	}
 
 	// Allocate a chunk large enough to hold 'n' bytes, then update
@@ -125,7 +126,7 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	//panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -306,7 +307,15 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	return 0;
+   	if(page_free_list == NULL)  
+        	return NULL;  
+  
+    	struct PageInfo* page = page_free_list;  
+    	page_free_list = page->pp_link;  
+    	page->pp_link = 0;  
+    	if(alloc_flags & ALLOC_ZERO)  
+        	memset(page2kva(page), 0, PGSIZE);  
+    	return page;  
 }
 
 //
@@ -319,6 +328,11 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+	if(pp->pp_link != 0  || pp->pp_ref != 0)  
+        	panic("page_free is not right");  
+    	pp->pp_link = page_free_list;  
+    	page_free_list = pp;  
+    	return;   
 }
 
 //
