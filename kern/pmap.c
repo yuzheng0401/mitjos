@@ -459,7 +459,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
   
     	*pte = (page2pa(pp) & ~0xfff) | perm | PTE_P;  
     	pp->pp_ref++;  	
-	return 0;
+	return 0; 
 }
 
 //
