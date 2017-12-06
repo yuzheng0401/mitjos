@@ -176,7 +176,11 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-
+	int perm = PTE_U | PTE_P;  
+    	int i=0;  
+    	n = ROUNDUP(npages*sizeof(struct PageInfo), PGSIZE);  
+    	for(i=0; i<n; i= i+PGSIZE)  
+        	page_insert(kern_pgdir, pa2page(PADDR(pages) + i), (void *) (UPAGES +i), perm); 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -188,7 +192,9 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-
+	perm =0;  
+    	perm = PTE_P |PTE_W;  
+    	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, ROUNDUP(KSTKSIZE, PGSIZE), PADDR(bootstack), perm); 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
 	// Ie.  the VA range [KERNBASE, 2^32) should map to
@@ -197,7 +203,12 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-
+	int size = ~0;  
+    	size = size - KERNBASE +1;  
+    	size = ROUNDUP(size, PGSIZE);  
+    	perm = 0;  
+    	perm = PTE_P | PTE_W;  
+    	boot_map_region(kern_pgdir, KERNBASE, size, 0, perm );  
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 
@@ -408,6 +419,7 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	 
 	while(size)  
     	{  
      	   pte_t* pte = pgdir_walk(pgdir, (void* )va, 1);  
@@ -449,6 +461,7 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
+
 	pte_t* pte = pgdir_walk(pgdir, va, 1);  
     	if(pte == NULL)  
       	  	return -E_NO_MEM;  
