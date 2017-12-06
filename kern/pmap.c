@@ -371,8 +371,26 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	// Fill this function in
-	return NULL;
+	// Fill this function in 
+    	int pdeIndex = (unsigned int)va >>22;  
+    	if(pgdir[pdeIndex] == 0 && create == 0)  
+        	return NULL;  
+    	if(pgdir[pdeIndex] == 0){  
+        	struct PageInfo* page = page_alloc(1);  
+        	if(page == NULL)  
+            	return NULL;  
+        	page->pp_ref++;  
+        	pte_t pgAddress = page2pa(page);  
+        	pgAddress |= PTE_U;  
+        	pgAddress |= PTE_P;  
+        	pgAddress |= PTE_W;  
+        	pgdir[pdeIndex] = pgAddress;  
+    	}  
+    	pte_t pgAdd = pgdir[pdeIndex];  
+    	pgAdd = pgAdd>>12<<12;  
+    	int pteIndex =(pte_t)va >>12 & 0x3ff;  
+    	pte_t * pte =(pte_t*) pgAdd + pteIndex;  
+    	return KADDR( (pte_t) pte );  
 }
 
 //
@@ -390,6 +408,16 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	while(size)  
+    	{  
+     	   pte_t* pte = pgdir_walk(pgdir, (void* )va, 1);  
+      	  if(pte == NULL)  
+      	      return;  
+      	  *pte= pa |perm|PTE_P;      
+      	  size -= PGSIZE;  
+      	  pa  += PGSIZE;  
+      	  va  += PGSIZE;  
+    	}  
 }
 
 //
@@ -439,7 +467,13 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+	pte_t* pte = pgdir_walk(pgdir, va, 0);  
+    	if(pte == NULL)  
+        	return NULL;  
+    	pte_t pa =  *pte>>12<<12;  
+    	if(pte_store != 0)  
+        	*pte_store = pte ;  
+    	return pa2page(pa);
 }
 
 //
