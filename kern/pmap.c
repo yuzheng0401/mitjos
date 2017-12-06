@@ -449,6 +449,16 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
+	pte_t* pte = pgdir_walk(pgdir, va, 1);  
+    	if(pte == NULL)  
+      	  	return -E_NO_MEM;  
+   	if( (pte[0] &  ~0xfff) == page2pa(pp))  
+     	   	pp->pp_ref--;  
+    	else if(*pte != 0)  
+        	page_remove(pgdir, va);  
+  
+    	*pte = (page2pa(pp) & ~0xfff) | perm | PTE_P;  
+    	pp->pp_ref++;  	
 	return 0;
 }
 
@@ -495,6 +505,15 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
+	pte_t* pte;  
+    	struct PageInfo* page = page_lookup(pgdir, va, &pte);  
+    	if(page == 0)  
+        	return;  
+    	*pte = 0;  
+    	page->pp_ref--;  
+    	if(page->pp_ref ==0)  
+        	page_free(page);  
+    	tlb_invalidate(pgdir, va);  
 }
 
 //
